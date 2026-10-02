@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkRingkas - Pemendek Link & Custom Alias</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js Library CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-link text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+                        LinkRingkas
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Pemendek Link & Custom Name Generator</p>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center space-x-3">
+                <button id="btn-stats-shortcut" onclick="scrollToStats()" class="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1.5 border border-slate-700">
+                    <i class="fa-solid fa-chart-line text-indigo-400"></i>
+                    <span>Statistik</span>
+                </button>
+                <button id="btn-export" onclick="exportData()" title="Ekspor Data" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 w-full flex-1 space-y-10">
+
+        <!-- Hero Section & Shortener Card -->
+        <section class="text-center max-w-3xl mx-auto space-y-6">
+            <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium">
+                <span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+                <span>Gratis & Tanpa Batas Simpan</span>
+            </div>
+            
+            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                Pendekkan URL & Sesuaikan <span class="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Nama Link Anda</span>
+            </h2>
+            <p class="text-slate-400 text-sm sm:text-base">
+                Ubah link panjang yang rumit menjadi ringkas, mudah diingat, dan memiliki QR Code otomatis.
+            </p>
+
+            <!-- Shortener Form Box -->
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-2xl text-left border border-slate-700/60 relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <form id="shortener-form" onsubmit="handleShorten(event)" class="space-y-4 relative z-10">
+                    <!-- Long URL Input -->
+                    <div>
+                        <label for="long-url" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-globe text-indigo-400 mr-1"></i> Tautan / Link Panjang <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="url" id="long-url" required placeholder="https://contoh-website-sangat-panjang.com/artikel/2026/promo-spesial" 
+                                class="w-full pl-11 pr-4 py-3.5 bg-slate-900/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                <i class="fa-solid fa-link"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Alias & Domain Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <!-- Prefix / Domain Selector -->
+                        <div class="md:col-span-5">
+                            <label for="domain-select" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                                Domain
+                            </label>
+                            <div class="relative">
+                                <select id="domain-select" class="w-full pl-10 pr-8 py-3 bg-slate-900/90 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer">
+                                    <option value="rk.id/">rk.id/</option>
+                                    <option value="singkat.link/">singkat.link/</option>
+                                    <option value="go.id/">go.id/</option>
+                                    <option value="s.id/">s.id/</option>
+                                </select>
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                    <i class="fa-solid fa-server"></i>
+                                </div>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Alias Input -->
+                        <div class="md:col-span-7">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="custom-alias" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                    Custom Nama / Alias
+                                </label>
+                                <button type="button" onclick="generateRandomAlias()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    <span>Generate Acak</span>
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input type="text" id="custom-alias" placeholder="contoh: promo-diskon-2026" 
+                                    pattern="[a-zA-Z0-9\-_]+" title="Hanya huruf, angka, tanda hubung (-), dan garis bawah (_)"
+                                    class="w-full pl-11 pr-4 py-3 bg-slate-900/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                    <i class="fa-solid fa-pen-tag"></i>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">Boleh dikosongkan jika ingin nama acak otomatis.</p>
+                        </div>
+                    </div>
+
+                    <!-- Extra Optional Meta (Title/Tag) -->
+                    <div>
+                        <label for="link-title" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            Judul / Catatan (Opsional)
+                        </label>
+                        <input type="text" id="link-title" placeholder="Contoh: Link Pendaftaran Webinar Mei" 
+                            class="w-full px-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="btn-submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 transition transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Perpendek & Buat Link</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Result Highlight Card (Hidden initially) -->
+        <section id="result-card" class="hidden transition-all duration-300">
+            <div class="glass-card rounded-2xl p-6 border border-emerald-500/40 bg-emerald-950/20 relative">
+                <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
+                    <i class="fa-solid fa-circle-check text-sm"></i>
+                    <span>Link Berhasil Diperpendek!</span>
+                </div>
+                
+                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                    <div class="space-y-1 overflow-hidden">
+                        <div class="flex items-center space-x-2">
+                            <a id="res-short-link" href="#" target="_blank" class="text-xl sm:text-2xl font-bold text-indigo-400 hover:underline truncate inline-block">
+                                rk.id/alias
+                            </a>
+                            <span id="res-tag" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                Live
+                            </span>
+                        </div>
+                        <p id="res-long-url" class="text-xs text-slate-400 truncate max-w-xl">
+                            https://original-link.com
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="btn-copy-main" onclick="copyResultLink()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center space-x-2 transition shadow-md">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Salin Link</span>
+                        </button>
+                        <button onclick="openQrModalCurrent()" class="px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-slate-700">
+                            <i class="fa-solid fa-qrcode text-indigo-400"></i>
+                            <span>QR Code</span>
+                        </button>
+                        <button onclick="testRedirectCurrent()" class="px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-slate-700">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-emerald-400"></i>
+                            <span>Buka Link</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Section -->
+        <section id="stats-section" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="glass-card rounded-xl p-4 flex items-center space-x-4 border border-slate-800">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl">
+                    <i class="fa-solid fa-link"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-medium">Total Link</p>
+                    <h3 id="stat-total-links" class="text-2xl font-bold text-white">0</h3>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-4 flex items-center space-x-4 border border-slate-800">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl">
+                    <i class="fa-solid fa-mouse-pointer"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-medium">Total Klik</p>
+                    <h3 id="stat-total-clicks" class="text-2xl font-bold text-white">0</h3>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-4 flex items-center space-x-4 border border-slate-800">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-xs text-slate-400 font-medium">Paling Populer</p>
+                    <h3 id="stat-popular-link" class="text-sm font-bold text-slate-200 truncate max-w-[160px] sm:max-w-[180px]">
+                        -
+                    </h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Link History Section -->
+        <section class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-indigo-400"></i>
+                        <span>Daftar Link Anda</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Kelola, edit alias, lihat QR Code, dan statistik klik.</p>
+                </div>
+
+                <!-- Search Input -->
+                <div class="flex items-center space-x-2">
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="search-input" oninput="renderLinks()" placeholder="Cari alias, link, judul..." 
+                            class="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-xs">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                    </div>
+                    <button onclick="confirmClearAll()" class="px-3 py-2 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 transition whitespace-nowrap">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Hapus Semua
+                    </button>
+                </div>
+            </div>
+
+            <!-- Links Container List -->
+            <div id="links-container" class="space-y-3">
+                <!-- Dynamic cards will be rendered here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden glass-card rounded-2xl p-10 text-center space-y-3 border border-slate-800">
+                <div class="w-16 h-16 mx-auto rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h4 class="text-slate-300 font-semibold text-base">Belum Ada Link Tersimpan</h4>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                    Masukkan URL panjang pada form di atas untuk membuat link ringkas pertama Anda.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- QR CODE MODAL -->
+    <div id="qr-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-sm w-full p-6 border border-slate-700 text-center space-y-5 relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div>
+                <h3 class="text-lg font-bold text-white">QR Code Link</h3>
+                <p id="qr-modal-alias" class="text-xs text-indigo-400 font-medium">rk.id/alias</p>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="bg-white p-4 rounded-xl inline-block shadow-lg mx-auto" id="qrcode-wrapper">
+                <div id="qrcode-container"></div>
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="downloadQRCode()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center space-x-2 transition">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Unduh PNG</span>
+                </button>
+                <button onclick="closeQrModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT ALIAS MODAL -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-md w-full p-6 border border-slate-700 space-y-4 relative">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+                <span>Edit Detail Link</span>
+            </h3>
+
+            <input type="hidden" id="edit-id">
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Judul / Catatan</label>
+                <input type="text" id="edit-title" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Custom Alias (Nama Link)</label>
+                <div class="flex items-center space-x-2">
+                    <span id="edit-domain-prefix" class="text-xs text-slate-400 bg-slate-900 px-3 py-2.5 border border-slate-700 rounded-lg">rk.id/</span>
+                    <input type="text" id="edit-alias" pattern="[a-zA-Z0-9\-_]+" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Link Tujuan (Long URL)</label>
+                <input type="url" id="edit-long-url" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium">Batal</button>
+                <button onclick="saveEditLink()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM DIALOG MODAL -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-sm w-full p-6 border border-slate-700 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto text-xl border border-rose-500/20">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirm-title" class="text-base font-bold text-white">Apakah Anda yakin?</h3>
+            <p id="confirm-desc" class="text-xs text-slate-400">Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeConfirmModal(false)" class="flex-1 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">Batal</button>
+                <button id="btn-confirm-act" onclick="closeConfirmModal(true)" class="flex-1 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass-card bg-slate-900 border border-indigo-500/50 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+            <span id="toast-message" class="text-xs font-medium">Pesan berhasil disimpan</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>&copy; 2026 LinkRingkas - Pemendek Link & Custom Name Generator.</p>
+            <p class="flex items-center space-x-1">
+                <span>Dibuat dengan</span>
+                <i class="fa-solid fa-heart text-rose-500 text-[10px]"></i>
+                <span>untuk efisiensi URL Anda</span>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Storage Keys & State Variables
+        const STORAGE_KEY = 'linkringkas_data_v1';
+        let linksList = [];
+        let currentActiveLink = null;
+        let confirmResolver = null;
+
+        // Word pools for random alias generation
+        const ADJECTIVES = ['super', 'kilat', 'hebat', 'mantap', 'promo', 'spesial', 'cepat', 'top', 'keren', 'vibe'];
+        const NOUNS = ['link', 'zone', 'diskon', 'info', 'event', 'hub', 'go', 'box', 'spot', 'net'];
+
+        // Initializer
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLinks();
+            renderLinks();
+            updateStats();
+            
+            // Check for simulated query params or hash navigation if any
+            checkHashRoute();
+        });
+
+        // Load data from LocalStorage
+        function loadLinks() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    linksList = JSON.parse(stored);
+                } else {
+                    // Seed sample link for first time user
+                    linksList = [
+                        {
+                            id: 'sample-1',
+                            domain: 'rk.id/',
+                            alias: 'diskon-spesial-2026',
+                            longUrl: 'https://www.tokopedia.com/promo-belanja-hemat-akhir-tahun',
+                            title: 'Sample Promo Diskon Belanja',
+                            clicks: 12,
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    saveToStorage();
+                }
+            } catch (e) {
+                console.error('Gagal memuat dari LocalStorage', e);
+                linksList = [];
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(linksList));
+            updateStats();
+        }
+
+        function generateRandomAlias() {
+            const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+            const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+            const randNum = Math.floor(100 + Math.random() * 900);
+            const generated = `${adj}-${noun}-${randNum}`;
+            document.getElementById('custom-alias').value = generated;
+            showToast('Alias acak telah dibuat!', 'fa-wand-magic-sparkles', 'text-indigo-400');
+        }
+
+        function handleShorten(event) {
+            event.preventDefault();
+
+            const longUrlInput = document.getElementById('long-url').value.trim();
+            const domainSelect = document.getElementById('domain-select').value;
+            let customAliasInput = document.getElementById('custom-alias').value.trim();
+            const linkTitleInput = document.getElementById('link-title').value.trim();
+
+            if (!longUrlInput) {
+                showToast('Harap masukkan URL yang valid!', 'fa-triangle-exclamation', 'text-rose-400');
+                return;
+            }
+
+            // If custom alias empty, auto-generate
+            if (!customAliasInput) {
+                const randStr = Math.random().toString(36).substring(2, 8);
+                customAliasInput = randStr;
+            } else {
+                // Sanitize slug
+                customAliasInput = customAliasInput.toLowerCase().replace(/[^a-z0-9\-_]/g, '-');
+            }
+
+            // Check if alias exists in current domain
+            const fullShort = domainSelect + customAliasInput;
+            const duplicate = linksList.find(item => (item.domain + item.alias).toLowerCase() === fullShort.toLowerCase());
+
+            if (duplicate) {
+                showToast('Alias "' + customAliasInput + '" sudah digunakan! Pilih nama lain.', 'fa-triangle-exclamation', 'text-amber-400');
+                return;
+            }
+
+            // Create new Link Object
+            const newLink = {
+                id: 'link_' + Date.now(),
+                domain: domainSelect,
+                alias: customAliasInput,
+                longUrl: longUrlInput,
+                title: linkTitleInput || 'Link Ringkas ' + customAliasInput,
+                clicks: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            linksList.unshift(newLink);
+            saveToStorage();
+            renderLinks();
+
+            // Show active result banner
+            displayResultCard(newLink);
+
+            // Reset form
+            document.getElementById('shortener-form').reset();
+            showToast('Link berhasil diperpendek!', 'fa-circle-check', 'text-emerald-400');
+        }
+
+        function displayResultCard(item) {
+            currentActiveLink = item;
+            const resultCard = document.getElementById('result-card');
+            const shortUrl = 'https://' + item.domain + item.alias;
+            
+            document.getElementById('res-short-link').innerText = item.domain + item.alias;
+            document.getElementById('res-short-link').href = shortUrl;
+            document.getElementById('res-long-url').innerText = item.longUrl;
+
+            resultCard.classList.remove('hidden');
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function renderLinks() {
+            const container = document.getElementById('links-container');
+            const emptyState = document.getElementById('empty-state');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+
+            const filtered = linksList.filter(item => {
+                const matchAlias = item.alias.toLowerCase().includes(searchTerm);
+                const matchLong = item.longUrl.toLowerCase().includes(searchTerm);
+                const matchTitle = (item.title || '').toLowerCase().includes(searchTerm);
+                return matchAlias || matchLong || matchTitle;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            container.innerHTML = filtered.map(item => {
+                const fullShort = item.domain + item.alias;
+                const formattedDate = new Date(item.createdAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+
+                return `
+                <div class="glass-card rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                        <div class="space-y-0.5 overflow-hidden">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-semibold text-slate-200 text-sm truncate">${escapeHtml(item.title)}</span>
+                                <span class="text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">${formattedDate}</span>
+                            </div>
+                            <a href="#" onclick="visitLink('${item.id}', event)" class="text-base font-bold text-indigo-400 hover:underline inline-block truncate">
+                                ${fullShort}
+                            </a>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 self-start sm:self-auto">
+                            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center space-x-1">
+                                <i class="fa-solid fa-chart-simple"></i>
+                                <span>${item.clicks} Klik</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <p class="text-slate-400 truncate max-w-md" title="${escapeHtml(item.longUrl)}">
+                            <i class="fa-solid fa-arrow-turn-down-right text-slate-600 mr-1"></i>
+                            ${escapeHtml(item.longUrl)}
+                        </p>
+
+                        <div class="flex items-center space-x-1.5 shrink-0">
+                            <button onclick="copyToClipboard('${fullShort}')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 transition border border-slate-700 flex items-center space-x-1" title="Salin Link">
+                                <i class="fa-regular fa-copy text-indigo-400"></i>
+                                <span>Salin</span>
+                            </button>
+                            <button onclick="openQrModalFor('${item.id}')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 transition border border-slate-700 flex items-center space-x-1" title="QR Code">
+                                <i class="fa-solid fa-qrcode text-indigo-400"></i>
+                                <span>QR</span>
+                            </button>
+                            <button onclick="openEditModal('${item.id}')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 transition border border-slate-700 flex items-center space-x-1" title="Edit Alias">
+                                <i class="fa-solid fa-pen text-amber-400"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button onclick="confirmDelete('${item.id}')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-rose-950/40 text-rose-400 transition border border-slate-700 flex items-center space-x-1" title="Hapus">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function openQrModalFor(id) {
+            const item = linksList.find(l => l.id === id);
+            if (!item) return;
+
+            currentActiveLink = item;
+            document.getElementById('qr-modal-alias').innerText = item.domain + item.alias;
+
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = ''; // Clear existing
+
+            // Generate QR
+            new QRCode(container, {
+                text: 'https://' + item.domain + item.alias,
+                width: 180,
+                height: 180,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function openQrModalCurrent() {
+            if (currentActiveLink) {
+                openQrModalFor(currentActiveLink.id);
+            }
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function downloadQRCode() {
+            const img = document.querySelector('#qrcode-container img');
+            if (img && img.src) {
+                const a = document.createElement('a');
+                a.href = img.src;
+                a.download = `QR_${currentActiveLink ? currentActiveLink.alias : 'link'}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('QR Code berhasil diunduh!', 'fa-download', 'text-emerald-400');
+            } else {
+                showToast('Gagal mengunduh QR Code', 'fa-triangle-exclamation', 'text-rose-400');
+            }
+        }
+
+        function openEditModal(id) {
+            const item = linksList.find(l => l.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-title').value = item.title || '';
+            document.getElementById('edit-domain-prefix').innerText = item.domain;
+            document.getElementById('edit-alias').value = item.alias;
+            document.getElementById('edit-long-url').value = item.longUrl;
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveEditLink() {
+            const id = document.getElementById('edit-id').value;
+            const newTitle = document.getElementById('edit-title').value.trim();
+            const newAlias = document.getElementById('edit-alias').value.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, '-');
+            const newLong = document.getElementById('edit-long-url').value.trim();
+
+            if (!newAlias || !newLong) {
+                showToast('Alias dan Long URL tidak boleh kosong!', 'fa-triangle-exclamation', 'text-rose-400');
+                return;
+            }
+
+            const item = linksList.find(l => l.id === id);
+            if (!item) return;
+
+            // Check duplicate alias if changed
+            const fullShort = item.domain + newAlias;
+            const duplicate = linksList.find(l => l.id !== id && (l.domain + l.alias).toLowerCase() === fullShort.toLowerCase());
+
+            if (duplicate) {
+                showToast('Alias "' + newAlias + '" sudah digunakan oleh link lain!', 'fa-triangle-exclamation', 'text-amber-400');
+                return;
+            }
+
+            item.title = newTitle || ('Link Ringkas ' + newAlias);
+            item.alias = newAlias;
+            item.longUrl = newLong;
+
+            saveToStorage();
+            renderLinks();
+            closeEditModal();
+            showToast('Detail link berhasil diperbarui!', 'fa-circle-check', 'text-emerald-400');
+        }
+
+        function visitLink(id, event) {
+            if (event) event.preventDefault();
+            const item = linksList.find(l => l.id === id);
+            if (!item) return;
+
+            // Increment click count
+            item.clicks = (item.clicks || 0) + 1;
+            saveToStorage();
+            renderLinks();
+
+            showToast(`Mengalihkan ke ${item.alias}...`, 'fa-arrow-up-right-from-square', 'text-emerald-400');
+            
+            // Open long URL in new tab
+            setTimeout(() => {
+                window.open(item.longUrl, '_blank');
+            }, 300);
+        }
+
+        function testRedirectCurrent() {
+            if (currentActiveLink) {
+                visitLink(currentActiveLink.id, null);
+            }
+        }
+
+        function copyResultLink() {
+            if (currentActiveLink) {
+                copyToClipboard(currentActiveLink.domain + currentActiveLink.alias);
+            }
+        }
+
+        function copyToClipboard(text) {
+            const fullText = text.startsWith('http') ? text : 'https://' + text;
+            
+            // Safe fallback for iframe copy
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(fullText).then(() => {
+                    showToast('Link berhasil disalin ke clipboard!', 'fa-copy', 'text-emerald-400');
+                }).catch(() => {
+                    fallbackCopy(fullText);
+                });
+            } else {
+                fallbackCopy(fullText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast('Link berhasil disalin!', 'fa-copy', 'text-emerald-400');
+            } catch (err) {
+                showToast('Gagal menyalin link.', 'fa-triangle-exclamation', 'text-rose-400');
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function updateStats() {
+            const totalLinks = linksList.length;
+            const totalClicks = linksList.reduce((acc, item) => acc + (item.clicks || 0), 0);
+
+            document.getElementById('stat-total-links').innerText = totalLinks;
+            document.getElementById('stat-total-clicks').innerText = totalClicks;
+
+            if (linksList.length > 0) {
+                const sorted = [...linksList].sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
+                const top = sorted[0];
+                document.getElementById('stat-popular-link').innerText = `${top.domain}${top.alias} (${top.clicks} klik)`;
+            } else {
+                document.getElementById('stat-popular-link').innerText = '-';
+            }
+        }
+
+        function confirmDelete(id) {
+            const item = linksList.find(l => l.id === id);
+            if (!item) return;
+
+            document.getElementById('confirm-title').innerText = 'Hapus Link ini?';
+            document.getElementById('confirm-desc').innerText = `Link "${item.domain}${item.alias}" akan dihapus permanen.`;
+            
+            document.getElementById('confirm-modal').classList.remove('hidden');
+
+            confirmResolver = (confirmed) => {
+                if (confirmed) {
+                    linksList = linksList.filter(l => l.id !== id);
+                    saveToStorage();
+                    renderLinks();
+                    showToast('Link berhasil dihapus', 'fa-trash-can', 'text-rose-400');
+                }
+            };
+        }
+
+        function confirmClearAll() {
+            if (linksList.length === 0) return;
+
+            document.getElementById('confirm-title').innerText = 'Hapus Semua Link?';
+            document.getElementById('confirm-desc').innerText = `Semua ${linksList.length} link tersimpan akan dihapus seluruhnya.`;
+            
+            document.getElementById('confirm-modal').classList.remove('hidden');
+
+            confirmResolver = (confirmed) => {
+                if (confirmed) {
+                    linksList = [];
+                    saveToStorage();
+                    renderLinks();
+                    showToast('Semua link telah dibersihkan', 'fa-trash-can', 'text-rose-400');
+                }
+            };
+        }
+
+        function closeConfirmModal(result) {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (confirmResolver) {
+                confirmResolver(result);
+                confirmResolver = null;
+            }
+        }
+
+        function exportData() {
+            if (linksList.length === 0) {
+                showToast('Tidak ada data untuk diekspor', 'fa-info-circle', 'text-amber-400');
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(linksList, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `linkringkas_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Data berhasil diekspor!', 'fa-download', 'text-emerald-400');
+        }
+
+        function scrollToStats() {
+            document.getElementById('stats-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showToast(msg, iconClass = 'fa-circle-check', colorClass = 'text-emerald-400') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = msg;
+            toastIcon.className = `fa-solid ${iconClass} ${colorClass} text-base`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function checkHashRoute() {
+            // Optional route listener for simulation
+        }
+    </script>
+</body>
+</html>
